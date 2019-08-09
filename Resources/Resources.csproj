@@ -16,6 +16,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Resources.Common\Resources.Common.csproj" />
     <ProjectReference Include="..\Resources.MessageBus\Resources.MessageBus.csproj" />
+    <ProjectReference Include="..\Resources.PerfomanceMonitoring\Resources.PerfomanceMonitoring.csproj" />
     <ProjectReference Include="..\Resources.Service\Resources.Service.csproj" />
     <ProjectReference Include="..\Resources.WebHookService\Resources.WebHookService.csproj" />
   </ItemGroup>

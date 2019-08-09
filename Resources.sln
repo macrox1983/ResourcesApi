@@ -3,19 +3,21 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.29102.190
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Resources", "Resources\Resources.csproj", "{6D821D0D-41C3-474C-9085-A6A5DBA514C7}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Resources", "Resources\Resources.csproj", "{6D821D0D-41C3-474C-9085-A6A5DBA514C7}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Resources.Common", "Resources.Common\Resources.Common.csproj", "{B1C58BE2-ACCF-4C4A-B7CE-EEEB86A530B6}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Resources.Common", "Resources.Common\Resources.Common.csproj", "{B1C58BE2-ACCF-4C4A-B7CE-EEEB86A530B6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Resources.Service", "Resources.Service\Resources.Service.csproj", "{150E32AA-9841-4C2A-9A7A-718FFEAA9423}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Resources.Service", "Resources.Service\Resources.Service.csproj", "{150E32AA-9841-4C2A-9A7A-718FFEAA9423}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Resources.DAL", "Resources.DAL\Resources.DAL.csproj", "{3BC22C6B-008B-43C4-8D60-E5D18BB25C3C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Resources.DAL", "Resources.DAL\Resources.DAL.csproj", "{3BC22C6B-008B-43C4-8D60-E5D18BB25C3C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Resources.Tests", "Resources.Tests\Resources.Tests.csproj", "{0E96322D-4622-489D-8D34-46E8DBF3DF48}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Resources.Tests", "Resources.Tests\Resources.Tests.csproj", "{0E96322D-4622-489D-8D34-46E8DBF3DF48}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Resources.MessageBus", "Resources.MessageBus\Resources.MessageBus.csproj", "{A921A35D-5630-4B85-945C-D6A19FEB2E32}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Resources.MessageBus", "Resources.MessageBus\Resources.MessageBus.csproj", "{A921A35D-5630-4B85-945C-D6A19FEB2E32}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Resources.WebHookService", "Resources.WebHookService\Resources.WebHookService.csproj", "{2FF3B733-320B-4CA5-8769-B69143A04312}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Resources.WebHookService", "Resources.WebHookService\Resources.WebHookService.csproj", "{2FF3B733-320B-4CA5-8769-B69143A04312}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Resources.PerfomanceMonitoring", "Resources.PerfomanceMonitoring\Resources.PerfomanceMonitoring.csproj", "{6B7CE239-7119-4CED-B336-BE05CAAD0948}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -51,6 +53,10 @@ Global
 		{2FF3B733-320B-4CA5-8769-B69143A04312}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2FF3B733-320B-4CA5-8769-B69143A04312}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2FF3B733-320B-4CA5-8769-B69143A04312}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6B7CE239-7119-4CED-B336-BE05CAAD0948}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6B7CE239-7119-4CED-B336-BE05CAAD0948}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6B7CE239-7119-4CED-B336-BE05CAAD0948}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6B7CE239-7119-4CED-B336-BE05CAAD0948}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

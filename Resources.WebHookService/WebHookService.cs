@@ -4,6 +4,7 @@ using Resources.Common;
 using Resources.Common.Abstractions;
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Net.Http;
 using System.Text;
 using System.Threading;
@@ -18,15 +19,17 @@ namespace Resources.WebHookService
     {
         private readonly IMessageBus _messageBus;
         private readonly IOptions<AppSettings> _options;
+        private readonly ITelemetryCollector _telemetryCollector;
         private ConcurrentDictionary<int, WebHookInfo> _webHooksInfo; //хранилище доп инфы о веб-хуках
         private ConcurrentQueue<WebHookRecord> _webHooks;//очередь веб-хуков на отправку
         private object _lock = new object();
         private Timer _sendHookTimer;
 
-        public WebHookService(IMessageBus messageBus, IOptions<AppSettings> options)
+        public WebHookService(IMessageBus messageBus, IOptions<AppSettings> options, ITelemetryCollector telemetryCollector)
         {
             _messageBus = messageBus ?? throw new ArgumentNullException(nameof(messageBus));
             _options = options ?? throw new ArgumentNullException(nameof(options));
+            _telemetryCollector = telemetryCollector ?? throw new ArgumentNullException(nameof(telemetryCollector));
             _webHooks = new ConcurrentQueue<WebHookRecord>();
             _webHooksInfo = new ConcurrentDictionary<int, WebHookInfo>();            
         }
@@ -34,7 +37,10 @@ namespace Resources.WebHookService
         public async Task StartAsync(CancellationToken cancellationToken)
         {
             await Task.FromResult(Subscribe());
-            _sendHookTimer = new Timer(new TimerCallback(SendHook), _options, 5000, 5000);
+            _sendHookTimer = new Timer(new TimerCallback(SendHook), _options, 0, _options.Value.WebHookSendPeriod);
+
+            // регистрируем сборку данных телеметрии
+            _telemetryCollector.RegisterCollectTelemetry(() => new KeyValuePair<string, object>("webHooksInQueue", _webHooks.Count));
         }
 
         /// <summary>
@@ -53,31 +59,42 @@ namespace Resources.WebHookService
         /// <param name="state"></param>
         private void SendHook(object state)
         {
-            lock (_lock)
+            Task.WhenAny(_telemetryCollector.WithStopwatch(() =>
             {
-                WebHookRecord hookRecord = null;
-                WebHookInfo hooInfo = null;
-                if (_webHooks.TryDequeue(out hookRecord)//извлекаем хук
-                        && hookRecord != null
-                        && _webHooksInfo.TryRemove(hookRecord.ResourceId, out hooInfo) //извлекаем его доп инфу
-                        && hooInfo != null
-                        && hooInfo.MustDieAt >= DateTime.Now)//проверяем не протух ли веб-хук
+                lock (_lock)
                 {
-                    var httpClient = new HttpClient();
-                    var request = new HttpRequestMessage(HttpMethod.Post, _options.Value.WebHookUri);
-                    request.Content =
-                        new StringContent($"{{\"resourceid\":\"{hookRecord.ResourceId}\", \"eventtype\":\"{hookRecord.EventType}\",\"newvalue\":\"{hookRecord.NewValue}\"}}"
-                        , Encoding.UTF8
-                        , "application/json");
-                    var sendingTask = httpClient.SendAsync(request);
-                    sendingTask.Wait();
-                    if (sendingTask.Result.StatusCode != System.Net.HttpStatusCode.OK)
+                    try
                     {
-                        _webHooksInfo.TryAdd(hooInfo.ResourceId, hooInfo);
-                        _webHooks.Enqueue(hookRecord);
+                        WebHookRecord hookRecord = null;
+                        WebHookInfo hooInfo = null;
+                        if (_webHooks.TryDequeue(out hookRecord)//извлекаем хук
+                                && hookRecord != null
+                                && _webHooksInfo.TryRemove(hookRecord.ResourceId, out hooInfo) //извлекаем его доп инфу
+                                && hooInfo != null
+                                && hooInfo.MustDieAt >= DateTime.Now)//проверяем не протух ли веб-хук
+                        {
+                            var httpClient = new HttpClient();
+                            var request = new HttpRequestMessage(HttpMethod.Post, _options.Value.WebHookUri);
+                            request.Content =
+                                new StringContent($"{{\"resourceid\":\"{hookRecord.ResourceId}\", \"eventtype\":\"{hookRecord.EventType}\",\"newvalue\":\"{hookRecord.NewValue}\"}}"
+                                , Encoding.UTF8
+                                , "application/json");
+                            var sendingTask = httpClient.SendAsync(request);
+                            sendingTask.Wait();
+                            if (sendingTask.Result.StatusCode != System.Net.HttpStatusCode.OK)
+                            {
+                                _webHooksInfo.TryAdd(hooInfo.ResourceId, hooInfo);
+                                _webHooks.Enqueue(hookRecord);
+                            }
+                        }
                     }
-                }                
-            }
+                    catch (Exception)
+                    {
+                        // необходимо добавить логирование ошибок
+                    }
+                }
+
+            }));
         }
 
         /// <summary>
@@ -86,20 +103,23 @@ namespace Resources.WebHookService
         /// <param name="webHook"></param>
         private void ReceiveWebHookRecord(WebHookRecord webHook)
         {
-            lock(_lock)
+            Task.WhenAny(_telemetryCollector.WithStopwatch(()=> 
             {
-                var newWebHookInfo = new WebHookInfo { ResourceId = webHook.ResourceId, MustDieAt = DateTime.Now.AddMinutes(_options.Value.WebHookLifetime)};
-                if (_webHooksInfo.ContainsKey(webHook.ResourceId))
+                lock (_lock)
                 {
-                    _webHooksInfo.TryGetValue(webHook.ResourceId, out WebHookInfo oldValue);
-                    _webHooksInfo.TryUpdate(webHook.ResourceId, newWebHookInfo, oldValue);
+                    var newWebHookInfo = new WebHookInfo { ResourceId = webHook.ResourceId, MustDieAt = DateTime.Now.AddMinutes(_options.Value.WebHookLifetime) };
+                    if (_webHooksInfo.ContainsKey(webHook.ResourceId))
+                    {
+                        _webHooksInfo.TryGetValue(webHook.ResourceId, out WebHookInfo oldValue);
+                        _webHooksInfo.TryUpdate(webHook.ResourceId, newWebHookInfo, oldValue);
+                    }
+                    else
+                    {
+                        _webHooksInfo.TryAdd(webHook.ResourceId, newWebHookInfo);
+                    }
+                    _webHooks.Enqueue(webHook);
                 }
-                else
-                {
-                    _webHooksInfo.TryAdd(webHook.ResourceId, newWebHookInfo);                 
-                }
-                _webHooks.Enqueue(webHook);
-            }
+            }));            
         }
 
         public async Task StopAsync(CancellationToken cancellationToken)

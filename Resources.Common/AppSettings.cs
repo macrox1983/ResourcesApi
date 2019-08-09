@@ -15,5 +15,10 @@ namespace Resources.Common
         /// Время жизни веб-хука, в минутах
         /// </summary>
         public int WebHookLifetime { get; set; }
+
+        /// <summary>
+        /// Периодичность отправки веб-хуков, в миллисекундах
+        /// </summary>
+        public int WebHookSendPeriod { get; set; }
     }
 }

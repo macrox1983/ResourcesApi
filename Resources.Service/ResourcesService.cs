@@ -16,11 +16,13 @@ namespace Resources.Service
     {
         private readonly IResourcesRepository _repository;
         private readonly IMessageBus _messageBus;
+        private readonly ITelemetryCollector _telemetryCollector;
 
-        public ResourcesService(IResourcesRepository repository, IMessageBus messageBus)
+        public ResourcesService(IResourcesRepository repository, IMessageBus messageBus, ITelemetryCollector telemetryCollector)
         {
             _repository = repository ?? throw new ArgumentNullException(nameof(repository));
             _messageBus = messageBus ?? throw new ArgumentNullException(nameof(messageBus));
+            _telemetryCollector = telemetryCollector ?? throw new ArgumentNullException(nameof(telemetryCollector));
         }
 
         /// <summary>
@@ -30,7 +32,7 @@ namespace Resources.Service
         /// <returns></returns>
         public async Task<bool> AddToStart(int id, string substring)
         {
-            return await WithWebHook(async () => await _repository.AddToStart(id, substring));
+            return await _telemetryCollector.WithStopwatch( async ()=>await WithWebHook(async () => await _repository.AddToStart(id, substring)));
         }
 
         /// <summary>
@@ -40,7 +42,7 @@ namespace Resources.Service
         /// <returns></returns>
         public async Task<bool> Append(int id, string value)
         {
-            return await WithWebHook(async () => await _repository.Append(id, value));
+            return await _telemetryCollector.WithStopwatch( async ()=>await WithWebHook(async () => await _repository.Append(id, value)));
         }
 
         /// <summary>
@@ -60,7 +62,7 @@ namespace Resources.Service
         /// <returns></returns>
         public async Task<bool> Create(string value)
         {            
-            return await WithWebHook(async () => await _repository.Create(value));
+            return await _telemetryCollector.WithStopwatch( async ()=>await WithWebHook(async () => await _repository.Create(value)));
         }
 
         /// <summary>
@@ -82,7 +84,7 @@ namespace Resources.Service
         /// <returns></returns>
         public async Task<bool> DeleteSubstring(int id, int start, int lenght)
         {
-            return await WithWebHook(async () => await _repository.DeleteSubstring(id, start, lenght));
+            return await _telemetryCollector.WithStopwatch(async () => await WithWebHook(async () => await _repository.DeleteSubstring(id, start, lenght)));
         }
 
         /// <summary>
@@ -91,9 +93,7 @@ namespace Resources.Service
         /// <returns></returns>
         public async Task<List<Resource>> Get()
         {
-            List<ResourceRecord> records = await _repository.Get();
-
-            return records.Select(record => new Resource { Id = record.Id, Value = record.Value }).ToList();
+            return await _telemetryCollector.WithStopwatch(async () => (await _repository.Get()).Select(record => new Resource { Id = record.Id, Value = record.Value }).ToList());
         }
 
         /// <summary>
@@ -103,10 +103,13 @@ namespace Resources.Service
         /// <returns></returns>
         public async Task<Resource> Get(int id)
         {
-            ResourceRecord record = await _repository.Get(id);
-            if(record != null)
-                return new Resource { Id = record.Id, Value = record.Value };
-            return default;
+            return await _telemetryCollector.WithStopwatch(async () => 
+            {
+                ResourceRecord record = await _repository.Get(id);
+                if (record != null)
+                    return new Resource { Id = record.Id, Value = record.Value };
+                return default;
+            });            
         }
 
         /// <summary>
@@ -118,7 +121,7 @@ namespace Resources.Service
         /// <returns></returns>
         public async Task<bool> Insert(int id, string value, int index)
         {
-            return await WithWebHook(async ()=>await _repository.Insert(id, value, index));            
+            return await _telemetryCollector.WithStopwatch(async () => await WithWebHook(async ()=>await _repository.Insert(id, value, index)));            
         }
 
         /// <summary>
@@ -130,7 +133,7 @@ namespace Resources.Service
         /// <returns></returns>
         public async Task<bool> Replace(int id, string oldValue, string newValue)
         {
-            return await WithWebHook(async ()=>await _repository.Replace(id, oldValue, newValue));
+            return await _telemetryCollector.WithStopwatch(async () => await WithWebHook(async ()=>await _repository.Replace(id, oldValue, newValue)));
         }
 
         /// <summary>
@@ -142,7 +145,7 @@ namespace Resources.Service
         /// <returns></returns>
         public async Task<string> Substring(int id, int start, int lenght)
         {
-            return await _repository.Substring(id, start, lenght);
+            return await _telemetryCollector.WithStopwatch(async () => await _repository.Substring(id, start, lenght));
         }
 
         /// <summary>
@@ -153,7 +156,7 @@ namespace Resources.Service
         /// <returns></returns>
         public async Task<bool> Update(int id, string newValue)
         {
-            return await WithWebHook(async ()=>await _repository.Update(id, newValue));            
+            return await _telemetryCollector.WithStopwatch(async () => await WithWebHook(async ()=>await _repository.Update(id, newValue)));            
         }
 
         private async Task<bool> WithWebHook(Func<Task<OperationResult>> function)

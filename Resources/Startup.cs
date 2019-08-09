@@ -17,6 +17,7 @@ using Resources.Service.DI;
 using Resources.WebHookService.DI;
 using Microsoft.OpenApi.Models;
 using Swashbuckle.AspNetCore.Swagger;
+using Resources.PerfomanceMonitoring.DI;
 
 namespace Resources
 {
@@ -37,7 +38,8 @@ namespace Resources
             services.AddResourcesService()
                 .AddSingleton<IEventsJournal, EventsJournal>()
                 .AddMessageBus()
-                .AddWebHookService();
+                .AddWebHookService()
+                .AddPerfomanceMonitor();
 
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
 
