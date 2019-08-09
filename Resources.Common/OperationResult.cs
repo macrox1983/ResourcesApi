@@ -4,7 +4,7 @@ using System.Text;
 
 namespace Resources.Common
 {
-    public class OperationResult
+    public struct OperationResult
     {
         public bool Success { get; set; }
 

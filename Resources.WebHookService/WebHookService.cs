@@ -59,29 +59,32 @@ namespace Resources.WebHookService
         /// <param name="state"></param>
         private void SendHook(object state)
         {
-            Task.WhenAny(_telemetryCollector.WithStopwatch(() =>
+            Task.Run(async() => await _telemetryCollector.WithStopwatch(() =>
             {
                 lock (_lock)
                 {
                     try
                     {
-                        WebHookRecord hookRecord = null;
-                        WebHookInfo hooInfo = null;
+                        WebHookRecord hookRecord;
+                        WebHookInfo hooInfo;
                         if (_webHooks.TryDequeue(out hookRecord)//извлекаем хук
-                                && hookRecord != null
+                                && !WebHookRecord.IsEmpty(hookRecord)
                                 && _webHooksInfo.TryRemove(hookRecord.ResourceId, out hooInfo) //извлекаем его доп инфу
-                                && hooInfo != null
+                                && !WebHookInfo.IsEmpty(hooInfo)
                                 && hooInfo.MustDieAt >= DateTime.Now)//проверяем не протух ли веб-хук
                         {
                             var httpClient = new HttpClient();
-                            var request = new HttpRequestMessage(HttpMethod.Post, _options.Value.WebHookUri);
-                            request.Content =
+                            var request = new HttpRequestMessage(HttpMethod.Post, _options.Value.WebHookUri)
+                            {
+                                Content =
                                 new StringContent($"{{\"resourceid\":\"{hookRecord.ResourceId}\", \"eventtype\":\"{hookRecord.EventType}\",\"newvalue\":\"{hookRecord.NewValue}\"}}"
                                 , Encoding.UTF8
-                                , "application/json");
-                            var sendingTask = httpClient.SendAsync(request);
-                            sendingTask.Wait();
-                            if (sendingTask.Result.StatusCode != System.Net.HttpStatusCode.OK)
+                                , "application/json")
+                            };
+                            HttpResponseMessage responce = null;
+                            Task.WhenAny(Task.Run(async ()=> { responce = await httpClient.SendAsync(request); } ));                            
+
+                            if (responce==null || responce.StatusCode != System.Net.HttpStatusCode.OK)
                             {
                                 _webHooksInfo.TryAdd(hooInfo.ResourceId, hooInfo);
                                 _webHooks.Enqueue(hookRecord);

@@ -4,7 +4,7 @@ using System.Text;
 
 namespace Resources.Common.ApiModel
 {
-    public class DeleteSubstringParameters
+    public struct DeleteSubstringParameters
     {
         public int Start { get; set; }
 

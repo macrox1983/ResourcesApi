@@ -4,7 +4,7 @@ using System.Text;
 
 namespace Resources.Common.ApiModel
 {
-    public class Resource
+    public struct Resource
     {
 
         public int Id { get; set; }

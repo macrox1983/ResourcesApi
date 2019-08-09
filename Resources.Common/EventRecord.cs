@@ -4,7 +4,7 @@ using System.Text;
 
 namespace Resources.Common
 {
-    public class EventRecord
+    public struct EventRecord
     {
         public int ResourceId { get; set; }
 

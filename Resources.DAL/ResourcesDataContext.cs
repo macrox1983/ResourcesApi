@@ -132,12 +132,13 @@ namespace Resources.DAL
             lock (_lock)
             {
                 result.Success = Records.TryGetValue(id, out ResourceRecord oldValue);
-                var newValue = oldValue;
-                result.Success = updateFunction(newValue);
                 if(result.Success)
-                    result.Success = Records.TryUpdate(id, newValue, oldValue);
-                if (result.Success)
-                    result.NewValue = newValue.Value;
+                {
+                    var newValue = oldValue;
+                    result.Success = updateFunction(newValue) && Records.TryUpdate(id, newValue, oldValue);
+                    if (result.Success)
+                        result.NewValue = newValue.Value;
+                }
             }
             return await Task.FromResult(result);
         }

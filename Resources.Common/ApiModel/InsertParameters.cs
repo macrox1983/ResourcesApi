@@ -4,7 +4,7 @@ using System.Text;
 
 namespace Resources.Common.ApiModel
 {
-    public class InsertParameters
+    public struct InsertParameters
     {
         public string Substring { get; set; }
         public int Index { get; set; }

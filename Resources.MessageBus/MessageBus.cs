@@ -25,7 +25,7 @@ namespace Resources.MessageBus
         /// </summary>
         /// <typeparam name="TMessage"></typeparam>
         /// <param name="receiveCallback"></param>
-        public void Subscribe<TMessage>(Action<TMessage> receiveCallback) where TMessage:class, IMessage
+        public void Subscribe<TMessage>(Action<TMessage> receiveCallback) where TMessage:IMessage
         {
             ConcurrentBag<Action<object>> subscribers = null;
             if (_subscribers.TryGetValue(typeof(TMessage), out subscribers) && subscribers != null)
@@ -45,7 +45,7 @@ namespace Resources.MessageBus
         /// </summary>
         /// <typeparam name="TMessage"></typeparam>
         /// <param name="message"></param>
-        public void SendMessage<TMessage>(TMessage message) where TMessage : class, IMessage
+        public void SendMessage<TMessage>(TMessage message) where TMessage : IMessage
         {
             ConcurrentBag<Action<object>> subscribers;
 

@@ -37,6 +37,8 @@ namespace Resources.PerfomanceMonitoring
 
         public async Task WithStopwatch(Action action, [CallerFilePath] string moduleName="", [CallerMemberName] string methodName = "")
         {
+            var mName = Path.GetFileNameWithoutExtension(moduleName);
+            AddStartConstant(mName, methodName);
             var stopwatch = Stopwatch.StartNew();
             action();
             stopwatch.Stop();           
@@ -45,10 +47,12 @@ namespace Resources.PerfomanceMonitoring
 
         public async Task<TResult> WithStopwatch<TResult>(Func<Task<TResult>> func, [CallerFilePath] string moduleName = "", [CallerMemberName] string methodName = "")
         {
+            var mName = Path.GetFileNameWithoutExtension(moduleName);
+            AddStartConstant(mName, methodName);
             var stopwatch = Stopwatch.StartNew();
             TResult result = await func();
             stopwatch.Stop();
-            AddTelemetry(Path.GetFileNameWithoutExtension(moduleName), methodName, stopwatch.ElapsedMilliseconds);
+            AddTelemetry(mName, methodName, stopwatch.ElapsedMilliseconds);
             return result;
         }
 
@@ -91,6 +95,9 @@ namespace Resources.PerfomanceMonitoring
                 telemetry.TryAdd(execCounter, executionCount);
             }
             AddAverageExecutionTime(telemetry, methodName, executionTime, executionCount);
+            AddTotalExecutionTime(telemetry, methodName, executionTime);
+            AddRequestPerSecondFromStartTelemetry(telemetry, methodName, executionCount);
+            AddRequestPerSecondByTotalExecutionTime(telemetry, methodName, executionCount);
         }
 
         private void AddAverageExecutionTime(ITelemetry telemetry, string methodName, double executionTime, long executionCount)
@@ -105,6 +112,67 @@ namespace Resources.PerfomanceMonitoring
             {
                 telemetry.TryAdd(avgExecTime, executionTime);
             }
+
         }
+
+        private void AddTotalExecutionTime(ITelemetry telemetry, string methodName, double executionTime)
+        {
+            string totalExecutionTime = $"{methodName}_TotalExecutionTime, sec";
+            if (telemetry.ContainsKey(totalExecutionTime))
+            {
+                double totalExecutionTimeCount = (double)telemetry[totalExecutionTime] + TimeSpan.FromMilliseconds(executionTime).TotalSeconds;
+                telemetry[totalExecutionTime] = totalExecutionTimeCount;                
+            }
+            else
+            {
+                telemetry.TryAdd(totalExecutionTime, TimeSpan.FromMilliseconds(executionTime).TotalSeconds);
+            }
+        }
+
+        private void AddStartConstant(string moduleName, string methodName)
+        {
+            Task.Run(() => 
+            {
+                string startMethodTelemetry = $"{methodName}_StartTelemetry";
+                ITelemetry telemetry = null;
+                if (!_telemetry.ContainsKey(moduleName) || !_telemetry.TryGetValue(moduleName, out telemetry))
+                {
+
+                    telemetry = new Telemetry(moduleName);
+                    _telemetry.TryAdd(moduleName, telemetry);
+                }
+                if(!telemetry.ContainsKey(startMethodTelemetry))
+                    telemetry.TryAdd(startMethodTelemetry, DateTime.Now);
+            });            
+        }
+
+        private void AddRequestPerSecondFromStartTelemetry(ITelemetry telemetry, string methodName, long executionCount)
+        {
+            string startMethodTelemetry = $"{methodName}_StartTelemetry";
+            string requestPerSecond = $"{methodName}_RequestsPerSecondFromStartTelemetry";
+            if(telemetry.ContainsKey(startMethodTelemetry))
+            {
+                double requestPerSecondCount = executionCount/(DateTime.Now - (DateTime)telemetry[startMethodTelemetry]).TotalSeconds;
+                if (telemetry.ContainsKey(requestPerSecond))
+                    telemetry[requestPerSecond] = requestPerSecondCount;
+                telemetry.TryAdd(requestPerSecond, requestPerSecondCount);
+            }
+        }
+
+        private void AddRequestPerSecondByTotalExecutionTime(ITelemetry telemetry, string methodName, long executionCount)
+        {
+            string totalExecutionTime = $"{methodName}_TotalExecutionTime, sec";
+            string requestPerSecond = $"{methodName}_RequestsPerSecondByTotalExecutionTime";
+            if (telemetry.ContainsKey(totalExecutionTime))
+            {
+                double totalExecutionTimeCount = (double)telemetry[totalExecutionTime];
+                double requestPerSecondCount = executionCount / (totalExecutionTimeCount != 0d? totalExecutionTimeCount : 1d);
+                if (telemetry.ContainsKey(requestPerSecond))
+                    telemetry[requestPerSecond] = requestPerSecondCount;
+                else
+                    telemetry.TryAdd(requestPerSecond, requestPerSecondCount);
+            }
+        }
+        //добавить обработку запросов в секунду
     }
 }

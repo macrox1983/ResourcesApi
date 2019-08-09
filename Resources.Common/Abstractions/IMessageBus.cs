@@ -15,13 +15,13 @@ namespace Resources.Common.Abstractions
         /// </summary>
         /// <typeparam name="TMessage"></typeparam>
         /// <param name="receiveCallback"></param>
-        void Subscribe<TMessage>(Action<TMessage> receiveCallback) where TMessage : class, IMessage;        
+        void Subscribe<TMessage>(Action<TMessage> receiveCallback) where TMessage : IMessage;        
        
         /// <summary>
         /// Метод отправки сообщения типа TMessage
         /// </summary>
         /// <typeparam name="TMessage"></typeparam>
         /// <param name="message"></param>
-        void SendMessage<TMessage>(TMessage message) where TMessage : class, IMessage;
+        void SendMessage<TMessage>(TMessage message) where TMessage : IMessage;
     }
 }
